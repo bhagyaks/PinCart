@@ -3,7 +3,10 @@
     class="bg-black text-white shadow px-4 py-3 flex items-center justify-between"
   >
     <!-- Left: Logo -->
-    <div class="flex items-center space-x-2">
+    <div
+      class="flex items-center space-x-2 cursor-pointer"
+      @click="$router.push('/')"
+    >
       <img
         :src="Logo"
         alt="PinCart Logo"
@@ -72,23 +75,44 @@
 
       <!-- Desktop menu -->
       <div class="hidden md:flex items-center space-x-3 md:space-x-4">
+        <template v-if="!isLoggedIn">
+          <router-link
+            to="/auth"
+            class="hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded cursor-pointer"
+            aria-label="sign in"
+          >
+            Sign In
+          </router-link>
+        </template>
+        <template v-else>
+          <button
+            disabled
+            class="hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded cursor-pointer"
+            aria-label="Profile"
+          >
+            Profile
+          </button>
+          <button
+            @click="handleLogout"
+            class="hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded cursor-pointer"
+            aria-label="Logout"
+          >
+            Logout
+          </button>
+          <LogoutModal
+            :show="showLogoutModal"
+            @confirm="confirmLogout"
+            @cancel="showLogoutModal = false"
+            title="Confirm Logout"
+            message="Are you sure you want to logout?"
+          />
+        </template>
         <button
+          disabled
           class="hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded cursor-pointer"
-          aria-label="Login"
-        >
-          Login
-        </button>
-        <button
-          class="hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded cursor-pointer"
-          aria-label="Cart"
+          aria-label="Cart (coming soon)"
         >
           Cart
-        </button>
-        <button
-          class="hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded cursor-pointer"
-          aria-label="Profile"
-        >
-          Profile
         </button>
       </div>
     </div>
@@ -103,29 +127,72 @@
       aria-label="Search products"
       class="w-full border border-gray-700 bg-black text-white rounded-full py-1.5 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
     />
+    <template v-if="!isLoggedIn">
+      <router-link
+        to="/auth"
+        class="block w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+        aria-label="Sign In"
+      >
+        Sign In
+      </router-link>
+    </template>
+    <template v-else>
+      <button
+        disabled
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        aria-label="Profile"
+      >
+        Profile
+      </button>
+      <button
+        @click="handleLogout"
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        aria-label="Logout"
+      >
+        Logout
+      </button>
+      <LogoutModal
+        :show="showLogoutModal"
+        @confirm="confirmLogout"
+        @cancel="showLogoutModal = false"
+        title="Confirm Logout"
+        message="Are you sure you want to logout?"
+      />
+    </template>
     <button
+      disabled
       class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-    >
-      Login
-    </button>
-    <button
-      class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+      aria-label="Cart (coming soon)"
     >
       Cart
     </button>
-    <button
-      class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-    >
-      Profile
-    </button>
   </div>
+  <transition name="fade">
+    <div
+      v-if="showToast"
+      class="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-md"
+      role="status"
+      aria-live="polite"
+    >
+      Logged out successfully
+    </div>
+  </transition>
 </template>
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
+import { useRouter } from "vue-router";
 import Logo from "../assets/logo1.png";
+import { useAuthStore } from "../stores/authStore";
+import LogoutModal from "./auth/LogoutModal.vue";
+
 const props = defineProps<{
   search?: string;
 }>();
+const router = useRouter();
+const auth = useAuthStore();
+const isLoggedIn = computed(() => !!auth.token);
+const showLogoutModal = ref(false);
+const showToast = ref(false);
 const localsearch = ref(props.search || "");
 const mobileMenuOpen = ref(false);
 const emit = defineEmits<{ (e: "update:search", value: string): void }>();
@@ -134,5 +201,28 @@ const emit = defineEmits<{ (e: "update:search", value: string): void }>();
 watch(localsearch, (val) => {
   emit("update:search", val);
 });
+
+const handleLogout = () => {
+  showLogoutModal.value = true;
+};
+
+const confirmLogout = () => {
+  auth.logout();
+  showLogoutModal.value = false;
+  showToast.value = true;
+  setTimeout(() => {
+    showToast.value = false;
+  }, 3000);
+  router.push("/auth");
+};
 </script>
-<style></style>
+<style>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

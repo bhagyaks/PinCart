@@ -1,10 +1,5 @@
-import axios from "axios";
+import api from "./axios";
 
-const API_URL = "https://fakestoreapi.com";
-
-const api = axios.create({
-  baseURL: API_URL,
-});
 export const fetchProducts = async () => {
   const response = await api.get("/products");
   return response.data;
