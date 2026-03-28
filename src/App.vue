@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import Navbar from "./components/Navbar.vue";
 import { ref } from "vue";
+import Navbar from "./app/layout/Navbar.vue";
 
 const search = ref("");
 </script>
