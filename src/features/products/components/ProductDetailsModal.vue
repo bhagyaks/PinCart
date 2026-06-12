@@ -5,6 +5,8 @@
       class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/30"
       role="dialog"
       aria-modal="true"
+      :aria-label="product.title"
+      @keydown.esc="$emit('close')"
     >
       <!-- Modal container -->
       <div
@@ -15,6 +17,7 @@
           @click="$emit('close')"
           class="absolute top-4 right-4 text-gray-500 hover:text-black focus:ring-2 focus:ring-blue-500 rounded"
           aria-label="Close product details"
+          autofocus
         >
           ✕
         </button>
@@ -26,7 +29,7 @@
             <img
               :src="product.image"
               :alt="product.title"
-              class="max-h-[350px] object-contain"
+              class="max-h-87.5 object-contain"
             />
           </div>
 
@@ -37,14 +40,22 @@
             </h2>
 
             <p class="text-blue-600 font-semibold text-xl mb-3">
-              ${{ product.price }}
+              ${{ product.price.toFixed(2) }}
             </p>
 
             <!-- Rating -->
-            <div class="flex items-center mb-4">
-              <span v-for="n in 5" :key="n" class="text-yellow-400">★</span>
+            <div class="flex items-center mb-4" aria-label="Product rating">
+              <span
+                v-for="n in 5"
+                :key="n"
+                :class="
+                  n <= Math.round(product.rating?.rate ?? 0)
+                    ? 'text-yellow-400'
+                    : 'text-gray-300'
+                "
+              >★</span>
               <span class="ml-2 text-gray-500 text-sm">
-                ({{ product.rating?.count || 0 }} reviews)
+                {{ product.rating?.rate ?? 0 }} ({{ product.rating?.count ?? 0 }} reviews)
               </span>
             </div>
 
@@ -56,13 +67,14 @@
             <!-- Buttons -->
             <div class="flex gap-3 mt-auto">
               <button
-                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
+                @click="handleAddToCart"
+                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
               >
                 Add to Cart
               </button>
 
               <button
-                class="flex-1 border border-gray-300 hover:bg-gray-100 py-2 rounded-lg"
+                class="flex-1 border border-gray-300 hover:bg-gray-100 py-2 rounded-lg transition-colors"
               >
                 Wishlist
               </button>
@@ -73,24 +85,34 @@
     </div>
   </transition>
 </template>
+
 <script setup lang="ts">
 import { Product } from "../product";
+import { useCartStore } from "../../cart/store/cartStore";
+import { useToast } from "../../../shared/composables/useToast";
 
-defineProps<{
+const props = defineProps<{
   product: Product | null;
   isOpen: boolean;
 }>();
-defineEmits<{
-  close: [];
-}>();
+const emit = defineEmits<{ close: [] }>();
+
+const cartStore = useCartStore();
+const { show } = useToast();
+
+const handleAddToCart = () => {
+  if (!props.product) return;
+  cartStore.addItem(props.product);
+  show(`"${props.product.title.slice(0, 30)}…" added to cart`, "success");
+  emit("close");
+};
 </script>
 
-<style>
+<style scoped>
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.25s ease;
 }
-
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;

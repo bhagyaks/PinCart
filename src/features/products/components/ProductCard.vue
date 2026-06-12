@@ -11,10 +11,6 @@
       />
 
       <!-- Hover Action Buttons -->
-      <!-- These buttons appear when the user hovers over the product image, allowing
-      them to quickly view details, add to cart, or add to wishlist.
-      hover image zoom : group-hover:scale-110 transition-transform 
-      Buttons appear only on hover: opacity-0 group-hover:opacity-100-->
       <div
         class="absolute inset-0 flex items-center justify-center gap-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition"
       >
@@ -27,7 +23,8 @@
         </button>
 
         <button
-          class="bg-blue-600 text-white shadow-md rounded-full p-3 hover:bg-blue-700"
+          @click.stop="handleAddToCart"
+          class="bg-blue-600 text-white shadow-md rounded-full p-3 hover:bg-blue-700 transition-colors"
           aria-label="Add to cart"
         >
           🛒
@@ -60,13 +57,20 @@
     </div>
   </article>
 </template>
+
 <script setup lang="ts">
 import { Product } from "../product";
-const props = defineProps<{
-  product: Product;
-}>();
-defineEmits<{
-  "open-details": [Product];
-}>();
-const addToCart = () => {};
+import { useCartStore } from "../../cart/store/cartStore";
+import { useToast } from "../../../shared/composables/useToast";
+
+const props = defineProps<{ product: Product }>();
+defineEmits<{ "open-details": [Product] }>();
+
+const cartStore = useCartStore();
+const { show } = useToast();
+
+const handleAddToCart = () => {
+  cartStore.addItem(props.product);
+  show(`"${props.product.title.slice(0, 30)}…" added to cart`, "success");
+};
 </script>

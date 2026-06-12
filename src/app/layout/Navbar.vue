@@ -56,6 +56,7 @@
         class="md:hidden p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
         @click="mobileMenuOpen = !mobileMenuOpen"
         aria-label="Toggle menu"
+        :aria-expanded="mobileMenuOpen"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -75,45 +76,54 @@
 
       <!-- Desktop menu -->
       <div class="hidden md:flex items-center space-x-3 md:space-x-4">
-        <template v-if="!isLoggedIn">
+        <template v-if="!auth.isAuthenticated">
           <router-link
             to="/auth"
-            class="hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded cursor-pointer"
-            aria-label="sign in"
+            class="hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+            aria-label="Sign in"
           >
             Sign In
           </router-link>
         </template>
         <template v-else>
           <button
-            disabled
-            class="hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded cursor-pointer"
-            aria-label="Profile"
-          >
-            Profile
-          </button>
-          <button
             @click="handleLogout"
-            class="hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded cursor-pointer"
+            class="hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
             aria-label="Logout"
           >
             Logout
           </button>
-          <LogoutModal
-            :show="showLogoutModal"
-            @confirm="confirmLogout"
-            @cancel="showLogoutModal = false"
-            title="Confirm Logout"
-            message="Are you sure you want to logout?"
-          />
         </template>
-        <button
-          disabled
-          class="hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded cursor-pointer"
-          aria-label="Cart (coming soon)"
+
+        <!-- Cart icon with badge -->
+        <router-link
+          to="/cart"
+          class="relative hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+          aria-label="`Cart, ${cartStore.totalItems} items`"
         >
-          Cart
-        </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+            />
+          </svg>
+          <span
+            v-if="cartStore.totalItems > 0"
+            class="absolute -top-2 -right-2 bg-blue-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"
+            aria-hidden="true"
+          >
+            {{ cartStore.totalItems > 99 ? "99+" : cartStore.totalItems }}
+          </span>
+        </router-link>
       </div>
     </div>
   </nav>
@@ -127,102 +137,79 @@
       aria-label="Search products"
       class="w-full border border-gray-700 bg-black text-white rounded-full py-1.5 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
     />
-    <template v-if="!isLoggedIn">
+    <template v-if="!auth.isAuthenticated">
       <router-link
         to="/auth"
         class="block w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-        aria-label="Sign In"
+        @click="mobileMenuOpen = false"
       >
         Sign In
       </router-link>
     </template>
     <template v-else>
       <button
-        disabled
-        class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        aria-label="Profile"
-      >
-        Profile
-      </button>
-      <button
         @click="handleLogout"
         class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        aria-label="Logout"
       >
         Logout
       </button>
-      <LogoutModal
-        :show="showLogoutModal"
-        @confirm="confirmLogout"
-        @cancel="showLogoutModal = false"
-        title="Confirm Logout"
-        message="Are you sure you want to logout?"
-      />
     </template>
-    <button
-      disabled
-      class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-      aria-label="Cart (coming soon)"
+    <router-link
+      to="/cart"
+      class="flex items-center justify-center gap-2 w-full border border-gray-600 text-white py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+      @click="mobileMenuOpen = false"
     >
       Cart
-    </button>
+      <span
+        v-if="cartStore.totalItems > 0"
+        class="bg-blue-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"
+      >
+        {{ cartStore.totalItems }}
+      </span>
+    </router-link>
   </div>
-  <transition name="fade">
-    <div
-      v-if="showToast"
-      class="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-md"
-      role="status"
-      aria-live="polite"
-    >
-      Logged out successfully
-    </div>
-  </transition>
+
+  <LogoutModal
+    :show="showLogoutModal"
+    @confirm="confirmLogout"
+    @cancel="showLogoutModal = false"
+    title="Confirm Logout"
+    message="Are you sure you want to logout?"
+  />
 </template>
+
 <script setup lang="ts">
-import { ref, watch, computed } from "vue";
+import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import Logo from "../../assets/logo1.png";
 import LogoutModal from "../../features/auth/components/LogoutModal.vue";
 import { useAuthStore } from "../../features/auth/store/authStore";
+import { useCartStore } from "../../features/cart/store/cartStore";
+import { useToast } from "../../shared/composables/useToast";
 
-const props = defineProps<{
-  search?: string;
-}>();
-const router = useRouter();
-const auth = useAuthStore();
-const isLoggedIn = computed(() => !!auth.token);
-const showLogoutModal = ref(false);
-const showToast = ref(false);
-const localsearch = ref(props.search || "");
-const mobileMenuOpen = ref(false);
+const props = defineProps<{ search?: string }>();
 const emit = defineEmits<{ (e: "update:search", value: string): void }>();
 
-// Emit search input to parent
-watch(localsearch, (val) => {
-  emit("update:search", val);
-});
+const router = useRouter();
+const auth = useAuthStore();
+const cartStore = useCartStore();
+const { show: showToast } = useToast();
+
+const showLogoutModal = ref(false);
+const localsearch = ref(props.search ?? "");
+const mobileMenuOpen = ref(false);
+
+watch(localsearch, (val) => emit("update:search", val));
 
 const handleLogout = () => {
+  mobileMenuOpen.value = false;
   showLogoutModal.value = true;
 };
 
 const confirmLogout = () => {
   auth.logout();
   showLogoutModal.value = false;
-  showToast.value = true;
-  setTimeout(() => {
-    showToast.value = false;
-  }, 3000);
+  showToast("Logged out successfully", "success");
   router.push("/auth");
 };
 </script>
-<style>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>
